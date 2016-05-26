@@ -2,13 +2,13 @@ package structs
 
 import "container/heap"
 
-type IntMedian struct {
+type IntMedianHeap struct {
 	minHeap *MinHeap
 	maxHeap *MaxHeap
 }
 
-func NewIntMedian() *IntMedian {
-	var im IntMedian
+func NewIntMedianHeap() *IntMedianHeap {
+	var im IntMedianHeap
 	im.minHeap = &MinHeap{}
 	heap.Init(im.minHeap)
 
@@ -18,7 +18,7 @@ func NewIntMedian() *IntMedian {
 	return &im
 }
 
-func (im *IntMedian) AddNum(num int) {
+func (im *IntMedianHeap) AddNum(num int) {
 	heap.Push(im.maxHeap, num)
 
 	// Size requirement
@@ -36,7 +36,7 @@ func (im *IntMedian) AddNum(num int) {
 	}
 }
 
-func (im IntMedian) FindMedian() float64 {
+func (im IntMedianHeap) GetMedian() float64 {
 	if im.maxHeap.Len() == im.minHeap.Len() {
 		return float64((im.maxHeap.Peek() + im.minHeap.Peek()) / 2.0)
 	}

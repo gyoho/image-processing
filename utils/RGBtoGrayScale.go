@@ -2,14 +2,12 @@ package utils
 
 import (
     "log"
-    // "image"
-    // _ "image/png"
     "image/jpeg"
     "mime/multipart"
     "github.com/disintegration/imaging"
 )
 
-func ConvertToGrayScale(file multipart.File) ([16]int, error){
+func ConvertToGrayScale(file multipart.File) ([16]int, error) {
     // load original image
     file.Seek(0, 0) // seek back to the beginning of the file
     src, err := jpeg.Decode(file)
