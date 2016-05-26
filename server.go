@@ -10,8 +10,8 @@ import (
 )
 
 const (
-     dbUser string = "yaopeng"
-     dbPassword string = "admin"
+     dbUser string = "INSERT USER NAME"
+     dbPassword string = "INSERT PASSWORD"
      dbServer string = "ds051553.mlab.com"
      dbPort string = "51553"
      dbName string = "image"

@@ -11,8 +11,8 @@ import (
 )
 
 func UploadImage(file multipart.File, header *multipart.FileHeader, userID string) (string, string, error) {
-	aws_access_key_id := "***"
-	aws_secret_access_key := "***"
+	aws_access_key_id := "INSERT ID"
+	aws_secret_access_key := "INSERT KEY"
 	token := ""
 	creds := credentials.NewStaticCredentials(aws_access_key_id, aws_secret_access_key, token)
 	_, err := creds.Get()
