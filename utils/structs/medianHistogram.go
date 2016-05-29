@@ -1,5 +1,7 @@
 package structs
 
+import "../../models"
+
 type MedianHistogram [16]IntMedianHeap
 
 func NewMedianHistogram() *MedianHistogram {
@@ -10,14 +12,14 @@ func NewMedianHistogram() *MedianHistogram {
     return mh
 }
 
-func (mh *MedianHistogram) AddHistogram(hg [16]int) {
+func (mh *MedianHistogram) AddHistogram(hg models.Histogram) {
     for i := 0; i < 15; i++ {
         mh[i].AddNum(hg[i])
     }
 }
 
-func (mh *MedianHistogram) GetMedianHistogram() [16]float64 {
-    var res [16]float64
+func (mh *MedianHistogram) GetMedianHistogram() models.Histogram {
+    var res models.Histogram
     for i := 0; i < 15; i++ {
         res[i] = mh[i].GetMedian()
     }

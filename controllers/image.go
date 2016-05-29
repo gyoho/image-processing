@@ -15,6 +15,7 @@ import (
     // Use defined model in another dir
     "../models"
     "../utils"
+    "../utils/structs"
     "errors"
 )
 
@@ -93,7 +94,7 @@ func createImage(ic ImageController, req *http.Request, param httprouter.Params)
 }
 
 func (ic ImageController) GetHistogram(rw http.ResponseWriter, _ *http.Request, param httprouter.Params) {
-    usr, err := retriveAllHistogramsOfUser(ic, param.ByName("id"))
+    hist, err := retriveHistogramsOfWeek(ic, param.ByName("id"))
     if err != nil {
 		log.Println(err)
         // Write content-type, statuscode, payload
@@ -103,39 +104,40 @@ func (ic ImageController) GetHistogram(rw http.ResponseWriter, _ *http.Request, 
 	} else {
         // Create response
         // Marshal provided interface into JSON structure
-        usrJson, _ := json.Marshal(usr)
+        histJson, _ := json.Marshal(hist)
         // Write content-type, statuscode, payload
         rw.Header().Set("Content-Type", "application/json")
         rw.WriteHeader(200)
-        fmt.Fprintf(rw, "%s\n", usrJson)
+        fmt.Fprintf(rw, "%s\n", histJson)
     }
 }
 
-// func (uc UserController) GetMedianHistogram(rw http.ResponseWriter, _ *http.Request, param httprouter.Params) {
-//     usr, err := retriveUserById(uc, param.ByName("id"))
-//     if err != nil {
-// 		log.Println(err)
-//         // Write content-type, statuscode, payload
-//         rw.Header().Set("Content-Type", "plain/text")
-//         rw.WriteHeader(400)
-//         fmt.Fprintf(rw, "%s\n", err)
-// 	} else {
-//         // Create response
-//         // Marshal provided interface into JSON structure
-//         usrJson, _ := json.Marshal(usr)
-//         // Write content-type, statuscode, payload
-//         rw.Header().Set("Content-Type", "application/json")
-//         rw.WriteHeader(200)
-//         fmt.Fprintf(rw, "%s\n", usrJson)
-//     }
-// }
-//
+func (ic ImageController) GetMedianHistogram(rw http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+    midHist, err := retriveHistogramsOfDay(ic)
+    midHistMap := map[string]models.Histogram{"median_histogram": midHist}
+    if err != nil {
+		log.Println(err)
+        // Write content-type, statuscode, payload
+        rw.Header().Set("Content-Type", "plain/text")
+        rw.WriteHeader(400)
+        fmt.Fprintf(rw, "%s\n", err)
+	} else {
+        // Create response
+        // Marshal provided interface into JSON structure
+        midHistJson, _ := json.Marshal(midHistMap)
+        // Write content-type, statuscode, payload
+        rw.Header().Set("Content-Type", "application/json")
+        rw.WriteHeader(200)
+        fmt.Fprintf(rw, "%s\n", midHistJson)
+    }
+}
 
-func retriveAllHistogramsOfUser(ic ImageController, user_id string) ([]bson.M, error) {
+
+func retriveHistogramsOfWeek(ic ImageController, user_id string) ([]bson.M, error) {
     // make connection
     conn := ic.session.DB("image").C("image_info")
     // prepare query
-    year, week := time.Now().ISOWeek()
+    year, week := time.Now().UTC().ISOWeek()    // mongo stores timestamp in UTC
     pipeline := []bson.M {
         bson.M {
             "$project": bson.M {
@@ -156,41 +158,44 @@ func retriveAllHistogramsOfUser(ic ImageController, user_id string) ([]bson.M, e
     res := []bson.M{}
     err := pipe.All(&res)
     if err != nil {
-        return []bson.M{}, errors.New("No user found with this ID")
+        return res, errors.New("No user found with this ID")
     }
-    fmt.Println(res)
 
     return res, nil
 }
 
-// func retriveAllHistogramsOfUser(ic ImageController, user_id string) ([]models.Histogram, error) {
-//     // make connection
-//     conn := ic.session.DB("image").C("image_info")
-//     // prepare query
-//     now := time.Now()
-//     year := now.Year()
-//     day := now.YearDay()
-//     pipeline := []bson.M {
-//         bson.M {
-//             "$project": bson.M {
-//     			"_id": 0,
-//     	        "user_id": 1,
-//     	        "year": bson.M{ "$year": "$timestamp"},
-//     	        "day": bson.M{ "$dayOfYear": "$timestamp"},
-//     			"histogram": 1}},
-//         bson.M {
-//             "$match": bson.M {
-//     			"user_id": user_id,
-//     	        "year": year,
-//     	        "day": day}}}
-//
-//     pipe := conn.Pipe(pipeline)
-//     res := []bson.M{}
-//     err := pipe.All(&res)
-//     if err != nil {
-//         return []models.Histogram{}, errors.New("No user found with this ID")
-//     }
-//     fmt.Println(res)
-//
-//     return []models.Histogram{}, nil
-// }
+func retriveHistogramsOfDay(ic ImageController) (models.Histogram, error) {
+    // make connection
+    conn := ic.session.DB("image").C("image_info")
+    // prepare query
+    now := time.Now().UTC() // mongo stores timestamp in UTC
+    year := now.Year()
+    day := now.YearDay()
+    pipeline := []bson.M {
+        bson.M {
+            "$project": bson.M {
+    			"_id": 0,
+    	        "year": bson.M{ "$year": "$timestamp"},
+    	        "day": bson.M{ "$dayOfYear": "$timestamp"},
+    			"histogram": 1}},
+        bson.M {
+            "$match": bson.M {
+    	        "year": year,
+    	        "day": day}},
+        bson.M {
+            "$project": bson.M {"histogram": 1}}}
+
+    pipe := conn.Pipe(pipeline)
+    res := []models.ImageInfo{}
+    err := pipe.All(&res)
+    if err != nil {
+        return models.Histogram{}, errors.New("ERROR")
+    }
+
+    mh := structs.NewMedianHistogram()
+    for _, elem := range res {
+        mh.AddHistogram(elem.Histogram)
+    }
+
+    return mh.GetMedianHistogram(), nil
+}

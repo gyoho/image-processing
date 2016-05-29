@@ -27,6 +27,7 @@ func main() {
     // Endpoints
     router.POST("/images/:userId", imageController.CreateImage)
     router.GET("/images/:id", imageController.GetHistogram)
+    router.GET("/images", imageController.GetMedianHistogram)
 
     // Fire up the server
     fmt.Println("Server listening on 8080")

@@ -17,5 +17,6 @@ type ImageInfo struct {
 }
 
 type Histogram [16]int
-// append json/mgo struct tag
+
+// // append json/mgo struct tag
 // to instruct how to store the user info

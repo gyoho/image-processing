@@ -36,10 +36,10 @@ func (im *IntMedianHeap) AddNum(num int) {
 	}
 }
 
-func (im IntMedianHeap) GetMedian() float64 {
+func (im IntMedianHeap) GetMedian() int {
 	if im.maxHeap.Len() == im.minHeap.Len() {
-		return float64((im.maxHeap.Peek() + im.minHeap.Peek()) / 2.0)
+		return (im.maxHeap.Peek() + im.minHeap.Peek()) / 2.0
 	}
 
-	return float64(im.maxHeap.Peek())
+	return im.maxHeap.Peek()
 }
