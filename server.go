@@ -10,8 +10,8 @@ import (
 )
 
 const (
-     dbUser string = "INSERT USER NAME"
-     dbPassword string = "INSERT PASSWORD"
+     dbUser string = ""
+     dbPassword string = ""
      dbServer string = "ds051553.mlab.com"
      dbPort string = "51553"
      dbName string = "image"
@@ -26,6 +26,7 @@ func main() {
 
     // Endpoints
     router.POST("/images/:userId", imageController.CreateImage)
+    router.GET("/images/:id", imageController.GetHistogram)
 
     // Fire up the server
     fmt.Println("Server listening on 8080")

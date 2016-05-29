@@ -13,7 +13,9 @@ type ImageInfo struct {
         FileName        string          `json:"file_name" bson:"file_name"`
         ImageURL        string          `json:"image_url" bson:"image_url"`
         Timestamp       time.Time       `json:"timestamp" bson:"timestamp"`
-        Histogram       [16]int           `json:"histogram" bson:"histogram"`
+        Histogram       Histogram       `json:"histogram" bson:"histogram"`
 }
+
+type Histogram [16]int
 // append json/mgo struct tag
 // to instruct how to store the user info
