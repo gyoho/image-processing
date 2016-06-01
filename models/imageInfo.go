@@ -14,6 +14,7 @@ type ImageInfo struct {
         ImageURL        string          `json:"image_url" bson:"image_url"`
         Timestamp       time.Time       `json:"timestamp" bson:"timestamp"`
         Histogram       Histogram       `json:"histogram" bson:"histogram"`
+        Delta           float64         `json:"delta,omitempty" bson:"delta"`
 }
 
 type Histogram [16]int

@@ -18,10 +18,15 @@ func (mh *MedianHistogram) AddHistogram(hg models.Histogram) {
     }
 }
 
-func (mh *MedianHistogram) GetMedianHistogram() models.Histogram {
+func (mh *MedianHistogram) GetMedianHistogram() (models.Histogram, error) {
     var res models.Histogram
     for i := 0; i < 15; i++ {
-        res[i] = mh[i].GetMedian()
+        mid, err := mh[i].GetMedian()
+        if err != nil {
+            return models.Histogram{}, err
+        }
+        res[i] = mid
+
     }
-    return res
+    return res, nil
 }

@@ -1,6 +1,9 @@
 package structs
 
-import "container/heap"
+import (
+	"container/heap"
+	"errors"
+)
 
 type IntMedianHeap struct {
 	minHeap *MinHeap
@@ -23,7 +26,7 @@ func (im *IntMedianHeap) AddNum(num int) {
 
 	// Size requirement
 	// max-heap can contain 1 more element than min-heap
-	if im.maxHeap.Len() > im.minHeap.Len()+1 {
+	if im.maxHeap.Len() > im.minHeap.Len() + 1 {
 		heap.Push(im.minHeap, heap.Pop(im.maxHeap))
 	}
 
@@ -36,10 +39,13 @@ func (im *IntMedianHeap) AddNum(num int) {
 	}
 }
 
-func (im IntMedianHeap) GetMedian() int {
+func (im IntMedianHeap) GetMedian() (int, error) {
+	if im.maxHeap.Len() == 0 {
+		return 0, errors.New("Heap is empty")
+	}
 	if im.maxHeap.Len() == im.minHeap.Len() {
-		return (im.maxHeap.Peek() + im.minHeap.Peek()) / 2.0
+		return (im.maxHeap.Peek() + im.minHeap.Peek()) / 2.0, nil
 	}
 
-	return im.maxHeap.Peek()
+	return im.maxHeap.Peek(), nil
 }

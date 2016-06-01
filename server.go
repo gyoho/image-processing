@@ -10,8 +10,8 @@ import (
 )
 
 const (
-     dbUser string = ""
-     dbPassword string = ""
+     dbUser string = "yaopeng"
+     dbPassword string = "admin"
      dbServer string = "ds051553.mlab.com"
      dbPort string = "51553"
      dbName string = "image"
@@ -26,8 +26,9 @@ func main() {
 
     // Endpoints
     router.POST("/images/:userId", imageController.CreateImage)
-    router.GET("/images/:id", imageController.GetHistogram)
-    router.GET("/images", imageController.GetMedianHistogram)
+    router.GET("/images/weekly/:userId", imageController.GetWeeklyHistograms)
+    router.GET("/images/day/median", imageController.GetMedianHistogram)
+    router.GET("/images/similarity/:userId/:n", imageController.GetUserIDWithSimilarHistogram)
 
     // Fire up the server
     fmt.Println("Server listening on 8080")

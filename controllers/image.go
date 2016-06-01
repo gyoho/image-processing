@@ -7,6 +7,8 @@ import (
     "encoding/json"
     "log"
     "time"
+    "strconv"
+    "errors"
     "gopkg.in/mgo.v2"
     "gopkg.in/mgo.v2/bson"
 
@@ -16,7 +18,6 @@ import (
     "../models"
     "../utils"
     "../utils/structs"
-    "errors"
 )
 
 // ImageController represents the controller for operating on the image resource
@@ -93,8 +94,8 @@ func createImage(ic ImageController, req *http.Request, param httprouter.Params)
     return imgInfo, nil
 }
 
-func (ic ImageController) GetHistogram(rw http.ResponseWriter, _ *http.Request, param httprouter.Params) {
-    hist, err := retriveHistogramsOfWeek(ic, param.ByName("id"))
+func (ic ImageController) GetWeeklyHistograms(rw http.ResponseWriter, _ *http.Request, param httprouter.Params) {
+    hist, err := retriveHistogramsOfWeek(ic, param.ByName("userId"))
     if err != nil {
 		log.Println(err)
         // Write content-type, statuscode, payload
@@ -113,8 +114,7 @@ func (ic ImageController) GetHistogram(rw http.ResponseWriter, _ *http.Request, 
 }
 
 func (ic ImageController) GetMedianHistogram(rw http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
-    midHist, err := retriveHistogramsOfDay(ic)
-    midHistMap := map[string]models.Histogram{"median_histogram": midHist}
+    midHistMap, err := getMedianHistogram(ic)
     if err != nil {
 		log.Println(err)
         // Write content-type, statuscode, payload
@@ -132,6 +132,63 @@ func (ic ImageController) GetMedianHistogram(rw http.ResponseWriter, _ *http.Req
     }
 }
 
+func getMedianHistogram(ic ImageController) (map[string]models.Histogram, error) {
+    col, err := retriveHistogramsOfDay(ic)
+    if err != nil {
+        return nil, err
+    }
+
+    midHist, err := calculateMedianHistogram(col)
+    if err != nil {
+        return nil, err
+    }
+
+    midHistMap := map[string]models.Histogram{"median_histogram" : midHist}
+    return midHistMap, nil
+}
+
+func (ic ImageController) GetUserIDWithSimilarHistogram(rw http.ResponseWriter, _ *http.Request, param httprouter.Params) {
+    userIdsMap, err := getUserIDWithSimilarHistogram(ic, param)
+    if err != nil {
+		log.Println(err)
+        // Write content-type, statuscode, payload
+        rw.Header().Set("Content-Type", "plain/text")
+        rw.WriteHeader(400)
+        fmt.Fprintf(rw, "%s\n", err)
+	} else {
+        // Create response
+        // Marshal provided interface into JSON structure
+        userIdsJson, _ := json.Marshal(userIdsMap)
+        // Write content-type, statuscode, payload
+        rw.Header().Set("Content-Type", "application/json")
+        rw.WriteHeader(200)
+        fmt.Fprintf(rw, "%s\n", userIdsJson)
+    }
+}
+
+func getUserIDWithSimilarHistogram(ic ImageController, param httprouter.Params) (map[string][]string, error) {
+    col, err := retriveHistogramsOfDay(ic)
+    if err != nil {
+        return nil, err
+    }
+
+    nSimilarElem, err := extractUserIDWithSimilarHistogram(param.ByName("userId"), param.ByName("n"), col)
+    if err != nil {
+        return nil, err
+    }
+
+    n, err := strconv.Atoi(param.ByName("n"))
+    if err != nil {
+        return nil, errors.New("Invalid parameter")
+    }
+    userIds := make([]string, n)
+    for i, elem := range nSimilarElem {
+        userIds[i] = elem.UserID
+    }
+
+    nUserIdsMap := map[string][]string{"userIds": userIds}
+    return nUserIdsMap, nil
+}
 
 func retriveHistogramsOfWeek(ic ImageController, user_id string) ([]bson.M, error) {
     // make connection
@@ -164,7 +221,7 @@ func retriveHistogramsOfWeek(ic ImageController, user_id string) ([]bson.M, erro
     return res, nil
 }
 
-func retriveHistogramsOfDay(ic ImageController) (models.Histogram, error) {
+func retriveHistogramsOfDay(ic ImageController) ([]models.ImageInfo, error) {
     // make connection
     conn := ic.session.DB("image").C("image_info")
     // prepare query
@@ -175,6 +232,7 @@ func retriveHistogramsOfDay(ic ImageController) (models.Histogram, error) {
         bson.M {
             "$project": bson.M {
     			"_id": 0,
+                "user_id": 1,
     	        "year": bson.M{ "$year": "$timestamp"},
     	        "day": bson.M{ "$dayOfYear": "$timestamp"},
     			"histogram": 1}},
@@ -183,19 +241,47 @@ func retriveHistogramsOfDay(ic ImageController) (models.Histogram, error) {
     	        "year": year,
     	        "day": day}},
         bson.M {
-            "$project": bson.M {"histogram": 1}}}
+            "$project": bson.M {
+                "user_id": 1,
+                "histogram": 1}}}
 
     pipe := conn.Pipe(pipeline)
     res := []models.ImageInfo{}
     err := pipe.All(&res)
     if err != nil {
-        return models.Histogram{}, errors.New("ERROR")
+        return nil, errors.New("No document found")
     }
 
+    return res, nil
+}
+
+func calculateMedianHistogram(res []models.ImageInfo) (models.Histogram, error) {
     mh := structs.NewMedianHistogram()
     for _, elem := range res {
         mh.AddHistogram(elem.Histogram)
     }
 
-    return mh.GetMedianHistogram(), nil
+    midHist, err := mh.GetMedianHistogram()
+    if err != nil {
+        return models.Histogram{}, err
+    }
+
+    return midHist, nil
+}
+
+func extractUserIDWithSimilarHistogram(user_id string, num string, inf []models.ImageInfo) ([]models.ImageInfo, error) {
+    var src models.ImageInfo
+    for _, elem := range inf {
+         if user_id == elem.UserID {
+             src = elem
+         }
+    }
+
+    sh := structs.NewSimilarHistHeap()
+    n, err := strconv.Atoi(num)
+    if err != nil {
+        return nil, errors.New("Invalid parameter")
+    }
+    sh.BuildHeap(src, inf, n)
+    return sh.GetNSimilarElem()
 }
