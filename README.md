@@ -1,8 +1,8 @@
-# image-processing
+# Image Processing with Golang
 A RESTful image processing web application server in GO!
 
-## Architecture
-Single app server + mLab + S3
+## Proposed Architecture
+Web server + SQS + MultipleAapp server + MongoDB + S3
 ![architecure image](https://github.com/gyoho/image-processing/blob/master/Architecture%20Diagram.png)
 
 ## Functionalities
