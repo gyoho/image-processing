@@ -2,7 +2,7 @@
 A RESTful image processing web application server in GO!
 
 ## Proposed Architecture
-Web server + SQS + MultipleAapp server + MongoDB + S3
+Web server + SQS + App server (auto-scaling group) + MongoDB + S3
 ![architecure image](https://github.com/gyoho/image-processing/blob/master/Architecture%20Diagram.png)
 
 ## Functionalities
